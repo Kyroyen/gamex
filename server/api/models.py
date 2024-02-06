@@ -30,3 +30,4 @@ class Comment(models.Model):
         null = True,
         related_name = "commentor",
     )
+

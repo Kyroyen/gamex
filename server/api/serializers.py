@@ -1,4 +1,5 @@
-from rest_framework.serializers import ModelSerializer
+from rest_framework.fields import empty
+from rest_framework.serializers import ModelSerializer, HyperlinkedIdentityField, HyperlinkedModelSerializer
 
 from .models import ApiUser,Blog,Comment
 
@@ -26,20 +27,61 @@ class ApiUserSerializer(ModelSerializer):
         return instance
         
 class BlogSerializer(ModelSerializer):
+    creator = ApiUserSerializer(required = False)
+    url = HyperlinkedIdentityField(view_name = "logged-in-user-view:blog-detail", lookup_field = "id", read_only = True)
+
     class Meta:
         model = Blog
         fields = [
+            "url",
             "title",
             "content",
             "creator",
             "date_created",
             ]
+        extra_kwargs = {
+            "creator": {
+                "validators" : ["validate_creator"],
+            }
+        }
 
+    def validate_creator(self, value):
+        return value
+
+    def to_internal_value(self, data):
+        creator = data.pop("creator")
+        fin_data = super().to_internal_value(data)
+        fin_data["creator"] = creator
+        return fin_data
+        
 class CommentSerializer(ModelSerializer):
+    url = HyperlinkedIdentityField(view_name = "logged-in-user-view:comment-detail", lookup_field = "id", read_only = True)
+    # user = ApiUserSerializer(source = "owner", read_only = True)
+    owner = ApiUserSerializer(required = False)
+
     class Meta:
         model = Comment
         fields = [
+            "url",
             "content",
             "date_created",
             "owner",
+            "blog",
             ]
+        extra_kwargs = {
+            "owner" : {"validators" : ["validate_owner"]},
+            "blog" : {"write_only" : True},
+            }
+        
+    def to_internal_value(self, data):
+        owner = data.pop("owner")
+        x = super().to_internal_value(data)
+        x["owner"] = owner
+        return x
+
+    def validate_owner(self, value):
+        return value
+    
+    def create(self, validated_data):
+        comment = Comment.objects.create(**validated_data)
+        return comment

@@ -5,6 +5,7 @@ from rest_framework.exceptions import AuthenticationFailed,PermissionDenied
 from django.shortcuts import get_object_or_404,redirect
 from django.contrib.auth import authenticate
 from django.utils import timezone
+# from django.http import 
 import jwt
 
 from .serializers import ApiUserSerializer,BlogSerializer,CommentSerializer
@@ -52,23 +53,77 @@ class UserView(APIView):
         serializer = ApiUserSerializer(request.user)
         return Response(data=serializer.data, status=status.HTTP_202_ACCEPTED)
     
-class CommentView(APIView):
+class UserCommentView(APIView):
 
     def get(self, request, username):
-        serializer = CommentSerializer(request.user.commentor.all(), many = True)
+        serializer = CommentSerializer(request.user.commentor.all(), many = True, context = {"request":request})
         return Response(data = serializer.data, status=status.HTTP_200_OK)
     
-class BlogView(APIView):
+class UserBlogView(APIView):
 
     def get(self, request, username):
-        serializer = BlogSerializer(request.user.created_by.all(), many = True)
-        return Response(data = serializer.data, status=status.HTTP_200_OK)
+        serializer = BlogSerializer(request.user.created_by.all(), many = True, context = {"request":request})
+        response = Response(data = serializer.data, status=status.HTTP_200_OK)
+        response["editable"] = "True" if (request.user==username) else "False"
+        print(response)
+        return response
     
     def post(self, request, username):
-        if username!=request.user.username:
-            raise PermissionDenied("User not same")
         data = request.data
-        blog = Blog(**data, creator = request.user)
-        blog.save()
-        serializer = BlogSerializer(blog)
-        return Response(data = serializer.data, status=status.HTTP_201_CREATED)
+        data["creator"] = request.user
+        blog = BlogSerializer(data=data)
+        if blog.is_valid():
+            blog.save()
+            response = Response(data = blog.data, status=status.HTTP_201_CREATED)
+            response.data["editable"] = True
+            return response
+        return Response(status=status.HTTP_404_NOT_FOUND, exception=True)
+    
+class BlogDetail(APIView):
+
+    def get(self, request, id):
+        try:
+            blog = Blog.objects.get(pk=id)
+        except Blog.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND, exception=True)
+        serializer = BlogSerializer(blog, context = {"request":request})
+        response = Response(data = serializer.data, status=status.HTTP_200_OK)
+        # print(serializer.instance.creator, request.user)
+        response.data["editable"] = True if (request.user==serializer.instance.creator) else False
+        return response
+
+class CommentDetail(APIView):
+
+    def get(self, request, id):
+        try:
+            blog = Blog.objects.get(pk=id)
+        except Blog.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND, exception=True)
+        serializer = CommentSerializer(blog.comments.all(), many = True, context = {"request":request})
+        response = Response(data = serializer.data, status=status.HTTP_200_OK)
+        # print(serializer.instance.creator, request.user)
+        # response.data["editable"] = True if (request.user==serializer.instance.creator) else False
+        return response
+    
+    def post(self, request, id):
+        try:
+            blog = Blog.objects.get(pk=id)
+        except Blog.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND, exception=True)
+        data = request.data
+        data["owner"] = request.user
+        data["blog"] = id
+        serializer = CommentSerializer(
+            data = data,
+            context = {"request":request},
+            )
+        # print(data)
+        # print(serializer.data)
+        if serializer.is_valid():
+            # print("inside is_valid")
+            # print(serializer.validated_data)
+            serializer.save()
+            response = Response(data = serializer.data, status=status.HTTP_201_CREATED)
+            response.data["editable"] = True
+            return response
+        return Response(data = serializer.errors,exception=True, status=status.HTTP_400_BAD_REQUEST)
