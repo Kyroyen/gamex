@@ -5,6 +5,9 @@ from django.utils.timezone import now as TimezoneNow
 class ApiUser(AbstractUser, PermissionsMixin):
     pass
 
+class Tags(models.Model):
+    slug = models.SlugField()
+
 class Blog(models.Model):
     title = models.CharField(max_length = 255)
     content = models.TextField(max_length = 500)
@@ -14,6 +17,18 @@ class Blog(models.Model):
         related_name = "created_by",
     )
     date_created = models.DateTimeField(default = TimezoneNow)
+    upvotes = models.ManyToManyField(
+        "ApiUser",
+        related_name = "blog_upvotes"
+    )
+    tags_related = models.ManyToManyField(
+        "Tags",
+        related_name="tags_related",
+    )
+
+    @property
+    def total_upvotes(self):
+        return self.upvotes.count()
 
 class Comment(models.Model):
     content = models.TextField(max_length = 255)
@@ -30,4 +45,3 @@ class Comment(models.Model):
         null = True,
         related_name = "commentor",
     )
-

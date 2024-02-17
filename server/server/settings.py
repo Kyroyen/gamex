@@ -73,11 +73,27 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "server.wsgi.application"
 
-
+TIDB_CA_PATH = Path(BASE_DIR).parent/"isrgrootx1.pem"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
+print(TIDB_CA_PATH)
 
 DATABASES = {
+    'tidb': {
+        'ENGINE': 'django_tidb',
+        'NAME': 'test',
+        'USER': '4RfNXJ5AszrzzDg.root',
+        'PASSWORD': 'bpeEpRZEiUoXv1r8',
+        'HOST': 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com',
+        'PORT': 4000,
+        'OPTIONS': {
+            'ssl_mode': 'VERIFY_IDENTITY',
+            'ssl': {
+                'ca': TIDB_CA_PATH,
+                },
+            "charset": "utf8mb4",
+        }
+    },
     "default" : {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "gamex",

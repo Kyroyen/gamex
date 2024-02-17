@@ -2,21 +2,23 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.exceptions import AuthenticationFailed, PermissionDenied
+from django.core.exceptions import ObjectDoesNotExist
 from django.shortcuts import get_object_or_404, redirect
 from django.contrib.auth import authenticate
 from django.utils import timezone
 # from django.http import
 import jwt
 
-from .serializers import ApiUserSerializer, BlogSerializer, CommentSerializer
-from .models import ApiUser, Comment, Blog
+from .serializers import ApiUserSerializer, BlogSerializer, CommentSerializer, SelfApiUserSerializer
+from .models import ApiUser, Comment, Blog, Tags
 from .middleware import AuthenticationCookieMiddleware
 
 
 class RegisterUserView(APIView):
     def post(self, request):
         print(request.data)
-        serializer = ApiUserSerializer(data=request.data, context={"request": request})
+        serializer = ApiUserSerializer(
+            data=request.data, context={"request": request})
         if serializer.is_valid():
             serializer.save()
             return Response(data=serializer.data, status=status.HTTP_201_CREATED)
@@ -55,7 +57,15 @@ class UserView(APIView):
     def get(self, request, username):
         print(request.user)
         user = get_object_or_404(ApiUser, username=username)
-        serializer = ApiUserSerializer(user, context={"request": request})
+        serializer = SelfApiUserSerializer(
+            user,
+            context={
+                "request": request
+            }) if request.user.username == username else ApiUserSerializer(
+                user,
+                context={
+                    "request": request
+                })
         response = Response(data=serializer.data,
                             status=status.HTTP_202_ACCEPTED)
         response.data["editable"] = (user == request.user)
@@ -80,14 +90,14 @@ class UserBlogView(APIView):
         response = Response(data=serializer.data, status=status.HTTP_200_OK)
         response["editable"] = "True" if (
             request.user == username) else "False"
-        print(response)
+        # print(response)
         return response
 
     def post(self, request, username):
         data = request.data
         data["creator"] = request.user
-        blog = BlogSerializer(data=data)
-        if blog.is_valid():
+        blog = BlogSerializer(data=data, context={"request": request})
+        if blog.is_valid(raise_exception=True):
             blog.save()
             response = Response(data=blog.data, status=status.HTTP_201_CREATED)
             response.data["editable"] = True
@@ -108,7 +118,24 @@ class BlogDetail(APIView):
         response.data["editable"] = True if (
             request.user == serializer.instance.creator) else False
         return response
-
+    
+    def post(self, request, id):
+        try:
+            blog = Blog.objects.get(pk=id)
+        except Blog.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND, exception=True)
+        # print(request.data)
+        upvote = True if request.data.pop("upvote", False) else False
+        response = Response(data="No Action", status=status.HTTP_100_CONTINUE)
+        # print(upvote)
+        if upvote:
+            blog.upvotes.add(request.user)
+            serializer = BlogSerializer(blog, context={"request": request})
+            response = Response(data=serializer.data, status=status.HTTP_200_OK)
+            # print(serializer.instance.creator, request.user)
+            response.data["editable"] = True if (
+                request.user == serializer.instance.creator) else False
+        return response
 
 class CommentDetail(APIView):
 
@@ -147,3 +174,19 @@ class CommentDetail(APIView):
             response.data["editable"] = True
             return response
         return Response(data=serializer.errors, exception=True, status=status.HTTP_400_BAD_REQUEST)
+
+class TagBlogsList(APIView):
+
+    def get(self, request, tag):
+        response = Response(data = {"tag" : tag})
+        try:
+            tag_object = Tags.objects.get(slug = tag)
+            response.data["blogs"] = BlogSerializer(
+                tag_object.tags_related.all(),
+                many = True, 
+                context={"request": request},
+                ).data
+            response.data["count"] = tag_object.tags_related.count()
+        except ObjectDoesNotExist:
+            pass
+        return response

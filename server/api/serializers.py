@@ -1,7 +1,9 @@
 from rest_framework.fields import empty
-from rest_framework.serializers import ModelSerializer, HyperlinkedIdentityField, HyperlinkedModelSerializer
+from rest_framework.serializers import ModelSerializer, HyperlinkedIdentityField, SlugRelatedField
+from django.core.exceptions import ObjectDoesNotExist
+from django.utils.encoding import smart_str
 from rest_framework import serializers
-from .models import ApiUser, Blog, Comment
+from .models import ApiUser, Blog, Comment, Tags
 
 
 class ApiUserSerializer(ModelSerializer):
@@ -15,7 +17,7 @@ class ApiUserSerializer(ModelSerializer):
             "username",
             "first_name",
             "last_name",
-            "email",
+            # "email",
             "password",
         ]
         extra_kwargs = {
@@ -35,11 +37,48 @@ class ApiUserSerializer(ModelSerializer):
         instance.save()
         return instance
 
+class SelfApiUserSerializer(ModelSerializer):
+    url = HyperlinkedIdentityField(
+        view_name="logged-in-user-view:user-view", lookup_field="username", read_only=True)
+    # url = serializers.IntegerField(source = "id")
+    class Meta:
+        model = ApiUser
+        fields = [
+            "url",
+            "username",
+            "first_name",
+            "last_name",
+            "email",
+        ]
+
+class TagSerializer(SlugRelatedField):
+    # class Meta:
+    #     model = Tags
+    #     fields = [
+    #         "slug",
+    #     ]
+
+    def to_internal_value(self, data):
+        try:
+            x = self.get_queryset().get_or_create(**{self.slug_field : data})
+            print(x)
+            return x[0]
+        except ObjectDoesNotExist:
+            self.fail("Doesn't Exist", slug_name = self.slug_field, value = smart_str(data))
+        except (TypeError, ValueError):
+            self.fail("invalid")
 
 class BlogSerializer(ModelSerializer):
     creator = ApiUserSerializer(required=False)
     url = HyperlinkedIdentityField(
         view_name="logged-in-user-view:blog-detail", lookup_field="id", read_only=True)
+    tags_related = TagSerializer(
+        queryset = Tags.objects.all(),
+        # read_only = True,
+        many = True,
+        slug_field = "slug",
+        # source = "tags_related",
+        )
 
     class Meta:
         model = Blog
@@ -47,16 +86,22 @@ class BlogSerializer(ModelSerializer):
             "url",
             "title",
             "content",
+            "tags_related",
             "creator",
             "date_created",
+            "total_upvotes",
         ]
         extra_kwargs = {
             "creator": {
                 "validators": ["validate_creator"],
-            }
+            },
+            "total_upvotes" : {
+                "read_only" : True,
+            },
         }
 
     def validate_creator(self, value):
+        # print(value)
         return value
 
     def to_internal_value(self, data):
@@ -64,6 +109,10 @@ class BlogSerializer(ModelSerializer):
         fin_data = super().to_internal_value(data)
         fin_data["creator"] = creator
         return fin_data
+    
+    def run_validation(self, data):
+        # print(data)
+        return super().run_validation(data)
 
 
 class CommentSerializer(ModelSerializer):
