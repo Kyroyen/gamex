@@ -2,3 +2,6 @@ django
 djangorestframework
 pyjwt
 django-tidb
+redis
+hiredis
+django-redis

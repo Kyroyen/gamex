@@ -76,7 +76,7 @@ WSGI_APPLICATION = "server.wsgi.application"
 TIDB_CA_PATH = Path(BASE_DIR).parent/"isrgrootx1.pem"
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
-print(TIDB_CA_PATH)
+# print(TIDB_CA_PATH)
 
 DATABASES = {
     'tidb': {
@@ -108,6 +108,16 @@ DATABASES = {
     }
 }
 
+CACHES = {
+    "default": {
+        "BACKEND": "django_redis.cache.RedisCache",
+        "LOCATION": "redis-10153.c274.us-east-1-3.ec2.cloud.redislabs.com",
+        "OPTIONS": {
+            "PASSWORD": "L0sUIciMOkvnVmnkS3SWJPrEmUoeo0DF",
+            "CLIENT_CLASS": "django_redis.client.DefaultClient",
+        }
+    }
+}
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -149,3 +159,4 @@ STATIC_URL = "static/"
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+

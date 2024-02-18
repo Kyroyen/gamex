@@ -22,6 +22,10 @@ class ApiUserSerializer(ModelSerializer):
         ]
         extra_kwargs = {
             "password": {"write_only": True},
+            "email": {
+                "write_only" : True,
+                "required" : True,
+                }
         }
 
     def is_valid(self, *, raise_exception=False):

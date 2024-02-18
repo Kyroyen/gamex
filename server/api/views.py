@@ -104,6 +104,17 @@ class UserBlogView(APIView):
             return response
         return Response(status=status.HTTP_404_NOT_FOUND, exception=True)
 
+class UserUpvoteView(APIView):
+
+    def get(self, request, username):
+        serializer = BlogSerializer(get_object_or_404(
+            ApiUser, username=username).blog_upvotes.all(), many=True, context={"request": request})
+        response = Response(data=serializer.data, status=status.HTTP_200_OK)
+        response["editable"] = "True" if (
+            request.user == username) else "False"
+        # print(response)
+        return response
+
 
 class BlogDetail(APIView):
 
@@ -190,3 +201,5 @@ class TagBlogsList(APIView):
         except ObjectDoesNotExist:
             pass
         return response
+
+    
