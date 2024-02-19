@@ -79,7 +79,7 @@ TIDB_CA_PATH = Path(BASE_DIR).parent/"isrgrootx1.pem"
 # print(TIDB_CA_PATH)
 
 DATABASES = {
-    'tidb': {
+    'default': {
         'ENGINE': 'django_tidb',
         'NAME': 'test',
         'USER': '4RfNXJ5AszrzzDg.root',
@@ -94,18 +94,18 @@ DATABASES = {
             "charset": "utf8mb4",
         }
     },
-    "default" : {
-        "ENGINE": "django.db.backends.mysql",
-        "NAME": "gamex",
-        "USER": "root",
-        "PASSWORD": "rishu",
-        "HOST" : "127.0.0.1",
-        "PORT": 3306,
-    },
-    "sqlite": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
-    }
+    # "default" : {
+    #     "ENGINE": "django.db.backends.mysql",
+    #     "NAME": "gamex",
+    #     "USER": "root",
+    #     "PASSWORD": "rishu",
+    #     "HOST" : "127.0.0.1",
+    #     "PORT": 3306,
+    # },
+    # "sqlite": {
+    #     "ENGINE": "django.db.backends.sqlite3",
+    #     "NAME": BASE_DIR / "db.sqlite3",
+    # }
 }
 
 CACHES = {

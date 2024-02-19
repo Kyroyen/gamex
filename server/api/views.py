@@ -76,7 +76,7 @@ class UserCommentView(APIView):
 
     def get(self, request, username):
         comments = request.user.commentor.all()
-        print(comments)
+        # print(comments)
         serializer = CommentSerializer(
             comments, many=True, context={"request": request})
         return Response(data=serializer.data, status=status.HTTP_200_OK)
@@ -202,4 +202,3 @@ class TagBlogsList(APIView):
             pass
         return response
 
-    
