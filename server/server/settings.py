@@ -11,9 +11,11 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
 
 
 # Quick-start development settings - unsuitable for production
@@ -79,21 +81,22 @@ TIDB_CA_PATH = Path(BASE_DIR).parent/"isrgrootx1.pem"
 # print(TIDB_CA_PATH)
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django_tidb',
-        'NAME': 'test',
-        'USER': '4RfNXJ5AszrzzDg.root',
-        'PASSWORD': 'bpeEpRZEiUoXv1r8',
-        'HOST': 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com',
-        'PORT': 4000,
-        'OPTIONS': {
-            'ssl_mode': 'VERIFY_IDENTITY',
-            'ssl': {
-                'ca': TIDB_CA_PATH,
-                },
-            "charset": "utf8mb4",
-        }
-    },
+    # 'default': {
+    #     'ENGINE': 'django_tidb',
+    #     'NAME': 'test',
+    #     'USER': '4RfNXJ5AszrzzDg.root',
+    #     'PASSWORD': 'bpeEpRZEiUoXv1r8',
+    #     'HOST': 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com',
+    #     'PORT': 4000,
+    #     'OPTIONS': {
+    #         'ssl_mode': 'VERIFY_IDENTITY',
+    #         'ssl': {
+    #             'ca': TIDB_CA_PATH,
+    #             },
+    #         "charset": "utf8mb4",
+    #     }
+    # },
+    "default" : dj_database_url.parse("postgres://rishh:VK9arxaoZIlSZQ5wK8fSSB21jQctktMb@dpg-cn9jh86d3nmc73dik8ng-a.oregon-postgres.render.com/gamex")
     # "default" : {
     #     "ENGINE": "django.db.backends.mysql",
     #     "NAME": "gamex",
